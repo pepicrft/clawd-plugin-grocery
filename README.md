@@ -18,12 +18,12 @@ First, install dstask using mise (recommended for zero friction):
 
 ```bash
 # Install dstask via mise go backend
-mise use -g go:github.com/naggie/dstask@latest
+mise use -g go:github.com/naggie/dstask/cmd/dstask@latest
 ```
 
 Or install manually:
 ```bash
-go install github.com/naggie/dstask@latest
+go install github.com/naggie/dstask/cmd/dstask@latest
 ```
 
 ### Install the Plugin
@@ -97,7 +97,7 @@ curl -X POST http://localhost:3000/api/gateway/rpc \
 ## 📋 Requirements
 
 - [dstask](https://github.com/naggie/dstask) must be installed and available in your PATH
-- 💡 **Tip:** Use `mise use -g go:github.com/naggie/dstask@latest` for hassle-free installation!
+- 💡 **Tip:** Use `mise use -g go:github.com/naggie/dstask/cmd/dstask@latest` for hassle-free installation!
 
 ## 🔧 How It Works
 
