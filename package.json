@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "clawdbot",
@@ -19,7 +21,9 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "@vitest/ui": "^2.1.8",
+    "typescript": "^5.0.0",
+    "vitest": "^2.1.8"
   },
   "clawdbot": {
     "extensions": [

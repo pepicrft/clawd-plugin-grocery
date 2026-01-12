@@ -1,5 +1,7 @@
 # 🛒 Clawdbot Grocery Plugin
 
+[![CI](https://github.com/pepicrft/clawd-plugin-grocery/actions/workflows/ci.yml/badge.svg)](https://github.com/pepicrft/clawd-plugin-grocery/actions/workflows/ci.yml)
+
 A Clawdbot plugin for managing grocery shopping lists using dstask.
 
 ## ✨ Features
@@ -121,9 +123,26 @@ npm install
 # Build
 npm run build
 
-# Test
+# Run tests
 npm test
+
+# Watch mode
+npm run test:watch
+
+# Test UI
+npm run test:ui
 ```
+
+### 🧪 Testing
+
+This plugin uses [Vitest](https://vitest.dev/) for testing. The test suite includes:
+
+- ✅ Plugin registration tests
+- ✅ Tool handler validation tests
+- ✅ Input schema validation tests
+- ✅ CI pipeline that runs on every commit
+
+CI runs tests on Node.js 20.x and 22.x to ensure compatibility.
 
 ## 📄 License
 
