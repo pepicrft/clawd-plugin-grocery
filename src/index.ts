@@ -1,43 +1,71 @@
 import { execSync } from "child_process";
 
 const GROCERY_TAG = "+grocery";
-const DSTASK_CMD = "dstask";
 
-interface GroceryItem {
-  id: string;
-  description: string;
+interface DstaskItem {
+  uuid: string;
   status: string;
+  id: number;
+  summary: string;
+  notes: string;
   tags: string[];
+  project: string;
+  priority: string;
+  created: string;
+  resolved: string;
+  due: string;
 }
 
 function execDstask(args: string[]): string {
   try {
-    return execSync(`${DSTASK_CMD} ${args.join(" ")}`, {
+    // Try mise exec first, fallback to direct dstask
+    const dstaskCmd = `mise exec -- dstask ${args.join(" ")} 2>/dev/null || dstask ${args.join(" ")}`;
+    
+    return execSync(dstaskCmd, {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
+      shell: "/bin/bash",
     }).trim();
   } catch (error: any) {
     throw new Error(`dstask command failed: ${error.message}`);
   }
 }
 
-function parseTaskLine(line: string): GroceryItem | null {
-  // Parse dstask output format: "ID status priority description tags"
-  const match = line.match(/^(\d+)\s+(\S+)\s+(.+?)(?:\s+\+[\w-]+)*$/);
-  if (!match) return null;
-
-  const [, id, status, description] = match;
-  const tags = line.match(/\+[\w-]+/g) || [];
-
-  return { id, description: description.trim(), status, tags };
+function parseDstaskJson(output: string): DstaskItem[] {
+  // dstask outputs JSON by default, but it's multiline
+  // We need to collect all lines from '[' to ']'
+  const lines = output.split('\n');
+  const jsonLines: string[] = [];
+  let started = false;
+  
+  for (const line of lines) {
+    if (line.trim().startsWith('[')) {
+      started = true;
+    }
+    if (started) {
+      jsonLines.push(line);
+      if (line.trim() === ']') {
+        break;
+      }
+    }
+  }
+  
+  if (jsonLines.length === 0) {
+    return [];
+  }
+  
+  try {
+    const json = jsonLines.join('\n');
+    return JSON.parse(json) as DstaskItem[];
+  } catch (error) {
+    console.error('Failed to parse dstask output as JSON:', error);
+    return [];
+  }
 }
 
-function listGroceries(): GroceryItem[] {
+function listGroceries(): DstaskItem[] {
   const output = execDstask(["next", GROCERY_TAG]);
-  return output
-    .split("\n")
-    .map(parseTaskLine)
-    .filter((item): item is GroceryItem => item !== null);
+  return parseDstaskJson(output);
 }
 
 function addGroceryItem(item: string): string {
@@ -55,19 +83,21 @@ function removeItem(id: string): string {
   return `Removed item ${id} from grocery list`;
 }
 
-function clearBoughtItems(): string {
-  const completed = execDstask(["show-resolved", GROCERY_TAG]);
-  const lines = completed.split("\n").filter((l) => l.trim());
+function listResolved(): DstaskItem[] {
+  const output = execDstask(["show-resolved", GROCERY_TAG]);
+  return parseDstaskJson(output);
+}
 
-  if (lines.length === 0) {
+function clearBoughtItems(): string {
+  const completed = listResolved();
+
+  if (completed.length === 0) {
     return "No bought items to clear";
   }
 
-  const ids = lines.map(parseTaskLine).filter((item): item is GroceryItem => item !== null).map((item) => item.id);
+  completed.forEach((item) => execDstask(["remove", item.id.toString()]));
 
-  ids.forEach((id) => execDstask(["remove", id]));
-
-  return `Cleared ${ids.length} bought item(s)`;
+  return `Cleared ${completed.length} bought item(s)`;
 }
 
 export default function (api: any) {
@@ -87,7 +117,8 @@ export default function (api: any) {
           }
           console.log("🛒 Grocery List:");
           items.forEach((item) => {
-            console.log(`  ${item.id}. ${item.description}`);
+            const priority = item.priority !== "P2" ? `[${item.priority}] ` : "";
+            console.log(`  ${item.id}. ${priority}${item.summary}`);
           });
         });
 
@@ -156,7 +187,7 @@ export default function (api: any) {
             result =
               items.length === 0
                 ? "Grocery list is empty"
-                : `Grocery list:\n${items.map((i) => `${i.id}. ${i.description}`).join("\n")}`;
+                : `Grocery list:\n${items.map((i) => `${i.id}. ${i.summary}`).join("\n")}`;
             break;
 
           case "add":
