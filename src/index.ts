@@ -16,10 +16,30 @@ interface DstaskItem {
   due: string;
 }
 
+let miseAvailable: boolean | null = null;
+
+function checkMiseAvailable(): boolean {
+  if (miseAvailable !== null) return miseAvailable;
+  
+  try {
+    execSync('which mise', { stdio: 'pipe' });
+    miseAvailable = true;
+    return true;
+  } catch {
+    miseAvailable = false;
+    return false;
+  }
+}
+
 function execDstask(args: string[]): string {
   try {
-    // Try mise exec first, fallback to direct dstask
-    const dstaskCmd = `mise exec -- dstask ${args.join(" ")} 2>/dev/null || dstask ${args.join(" ")}`;
+    let dstaskCmd: string;
+    
+    if (checkMiseAvailable()) {
+      dstaskCmd = `mise exec go:github.com/naggie/dstask/cmd/dstask@latest -- dstask ${args.join(" ")}`;
+    } else {
+      dstaskCmd = `dstask ${args.join(" ")}`;
+    }
     
     return execSync(dstaskCmd, {
       encoding: "utf-8",
